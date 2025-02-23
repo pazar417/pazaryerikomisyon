@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <title>Toplu Hesaplama</title>
+    <style>
+        .upload-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .drop-zone {
+            border: 2px dashed #4CAF50;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+        }
+        .download-template {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 4px;
+            background: #e0e0e0;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .progress-bar div {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        button {
+            background: #4800ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .drop-zone.dragover {
+            background: #c8e6c9;
+            border-color: #43a047;
+            transform: scale(1.02);
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            display: none;
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar .fill {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s ease;
+        }
+    
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            display: none;
+        }
+    
+        .error-list {
+            margin-top: 10px;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 4px;
+            display: none;
+        }
+    
+        .error-item {
+            color: #c62828;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+<header style="position: fixed; top: 10px; right: 10px;">
+    <button onclick="window.location.href='index.html'" style="padding: 10px 20px; background-color: #4800ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Ana Sayfaya Git
+    </button>
+</header>
+    <div class="upload-container">
+        <h2>Excel ile Toplu Hesaplama</h2>
+        <div class="download-template">
+            <button onclick="downloadTemplate()">Şablon İndir</button>
+        </div>
+        <div class="drop-zone" id="dropZone">
+            <p>Excel dosyanızı buraya sürükleyin veya tıklayın</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+        </div>
+        <div class="progress-bar" id="progressBar">
+            <div></div>
+        </div>
+        <div id="resultArea"></div>
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="fill"></div>
+            </div>
+            <div class="progress-text"></div>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div class="error-list" id="errorList"></div>
+    </div>
+    
+    <script>
+        // XLSX ve FileSaver global değişkenlerinin varlığını kontrol et
+        if (typeof XLSX === 'undefined') {
+            console.error('XLSX kütüphanesi yüklenemedi!');
+        }
+
+        // Şablon indirme fonksiyonu düzeltmesi
+        function downloadTemplate() {
+            try {
+                const template = [{
+                    'Ürün Adı': 'Örnek Ürün',
+                    'Satış Fiyatı': '100',
+                    'Ürün Maliyeti': '50',
+                    'Fatura': 'Var',
+                    'Kargo Maliyeti': '10',
+                    'Hizmet Maliyeti': '5',
+                    'Komisyon Oranı': '10'
+                }];
+
+                const ws = XLSX.utils.json_to_sheet(template);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Şablon');
+                
+                // XLSX.writeFile yerine alternatif indirme yöntemi
+                const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+                saveAs(new Blob([wbout], {type:"application/octet-stream"}), "hesaplama-sablonu.xlsx");
+            } catch (error) {
+                console.error('Şablon indirme hatası:', error);
+                alert('Şablon indirilirken bir hata oluştu.');
+            }
+        }
+
+        // Dosya yükleme fonksiyonu düzeltmesi
+        function handleFile(file) {
+            try {
+                if (!file || !file.name.endsWith('.xlsx')) {
+                    alert('Lütfen geçerli bir Excel dosyası (.xlsx) seçin');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        processExcel(workbook);
+                    } catch (error) {
+                        console.error('Excel okuma hatası:', error);
+                        alert('Excel dosyası okunurken bir hata oluştu.');
+                    }
+                };
+                reader.onerror = function(error) {
+                    console.error('Dosya okuma hatası:', error);
+                    alert('Dosya okunurken bir hata oluştu.');
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error('Genel hata:', error);
+                alert('Beklenmeyen bir hata oluştu.');
+            }
+        }
+
+        function processExcel(workbook) {
+            try {
+                // Excel'den verileri al
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(worksheet);
+
+                // Her satır için hesaplama yap
+                const results = data.map(row => {
+                    const commission = (parseFloat(row['Komisyon Oranı']) / 100) * parseFloat(row['Satış Fiyatı']);
+                    const totalCost = parseFloat(row['Ürün Maliyeti']) + 
+                                    parseFloat(row['Kargo Maliyeti']) + 
+                                    parseFloat(row['Hizmet Maliyeti']) + 
+                                    commission;
+                    
+                    const hasInvoice = row['Fatura'] === 'Var';
+                    const netProfitBeforeTax = parseFloat(row['Satış Fiyatı']) - totalCost;
+                    
+                    const taxableProfit = parseFloat(row['Satış Fiyatı']) - 
+                        (hasInvoice ? totalCost : (parseFloat(row['Kargo Maliyeti']) + 
+                                                 parseFloat(row['Hizmet Maliyeti']) + 
+                                                 commission));
+                    
+                    const taxAmount = taxableProfit * 0.20;
+                    const stopajAmount = (netProfitBeforeTax - taxAmount) * 0.01;
+                    const netProfitAfterTax = netProfitBeforeTax - taxAmount - stopajAmount;
+                    const profitMargin = (netProfitBeforeTax / parseFloat(row['Satış Fiyatı'])) * 100;
+
+                    return {
+                        'Ürün Adı': row['Ürün Adı'],
+                        'Satış Fiyatı': row['Satış Fiyatı'],
+                        'Ürün Maliyeti': row['Ürün Maliyeti'],
+                        'Fatura': row['Fatura'],
+                        'Kargo Maliyeti': row['Kargo Maliyeti'],
+                        'Hizmet Maliyeti': row['Hizmet Maliyeti'],
+                        'Komisyon Oranı': row['Komisyon Oranı'] + '%',
+                        'Komisyon Tutarı': commission.toFixed(2),
+                        'Net Kazanç (Vergi Öncesi)': netProfitBeforeTax.toFixed(2),
+                        'Vergi Sonrası Net': netProfitAfterTax.toFixed(2),
+                        'Kâr Oranı': profitMargin.toFixed(2) + '%'
+                    };
+                });
+
+                // Sonuçları yeni Excel dosyasına aktar
+                const newWs = XLSX.utils.json_to_sheet(results);
+                const newWb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(newWb, newWs, 'Hesaplama Sonuçları');
+                
+                // Dosyayı indir
+                XLSX.writeFile(newWb, 'hesaplama-sonuclari.xlsx');
+                
+            } catch (error) {
+                console.error('İşleme hatası:', error);
+                alert('Excel dosyası işlenirken bir hata oluştu: ' + error.message);
+            }
+        }
+
+        // Global scope'a fonksiyonları ekle
+        window.downloadTemplate = downloadTemplate;
+        window.handleFile = handleFile;
+
+        // Olay dinleyicileri
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            if (dropZone && fileInput) {
+                dropZone.onclick = () => fileInput.click();
+                // Dosya sürükleme olayları
+                dropZone.ondragover = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                };
+
+                dropZone.ondragleave = () => {
+                    dropZone.classList.remove('dragover');
+                };
+
+                dropZone.ondrop = (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    handleFile(file);
+                };
+
+                fileInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    handleFile(file);
+                };
+            }
+        });
+    </script>
+    <script src="batch-processor.js"></script>
+</body>
+</html>
