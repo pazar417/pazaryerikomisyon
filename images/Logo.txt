@@ -1,0 +1,33 @@
+Logo dosyaları için önerilen özellikler:
+
+1. **Boyutlar:**
+- Önerilen boyut: 240x100 piksel (2x için)
+- Minimum boyut: 120x50 piksel (1x için)
+- En boy oranı: Yaklaşık 2.4:1
+
+2. **Dosya özellikleri:**
+- Format: PNG (şeffaf arka plan için)
+- Çözünürlük: 72 DPI
+- Renk modu: RGB
+- Dosya boyutu: Maksimum 50KB
+- Şeffaf arka plan (transparent)
+
+3. **İsimlendirme kuralları:**
+- Küçük harfler
+- Boşluk yerine tire kullanımı
+- Örnekler:
+  - trendyol.png
+  - hepsiburada.png
+  - n11.png
+
+4. **Her pazaryeri için iki versiyon:**
+- Light mode için normal renkli versiyon
+- Dark mode için beyaz/açık renkli versiyon
+  - Örnek: trendyol-dark.png
+
+5. **Optimizasyon önerileri:**
+- PNG optimizasyonu yapılmalı
+- Gereksiz metadata temizlenmeli
+- WebP formatında alternatif versiyonlar oluşturulabilir
+
+Bu özelliklerle oluşturulan logolar, uygulama içinde en iyi görüntü kalitesini ve performansı sağlayacaktır.
